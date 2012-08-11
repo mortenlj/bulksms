@@ -29,9 +29,23 @@
 ###
 
 from collections import defaultdict
+from json import dumps, loads
 
 import supybot.conf as conf
 import supybot.registry as registry
+
+class JsonValue(registry.Value):
+    """Any value that can be serialized to JSON. Probably hard to work with manually.
+    """
+
+    def serialize(self):
+        json_value = dumps(self())
+        return json_value.replace('\\', '\\\\')
+
+    def set(self, json_value):
+        s = loads(json_value)
+        self.setValue(s)
+
 
 def configure(advanced):
     # This will be called by supybot to configure this module.  advanced is
@@ -55,10 +69,7 @@ def configure(advanced):
             channel = something("Channel?")
             mapping[preference].append(channel)
             more = yn("Add another channel?", default=True)
-        for pref in mapping.keys():
-            conf.registerGlobalValue(BulkSMS.mapping, pref, registry.SpaceSeparatedListOfStrings("", 
-                  """Channels allowed to send message to users with this preference"""))
-            getattr(BulkSMS.mapping, pref).setValue(mapping[pref])
+        BulkSMS.mapping.setValue(dict(mapping))
     else:
         BulkSMS.allowInAnyChannel.setValue(True)
 
@@ -72,7 +83,8 @@ conf.registerGlobalValue(BulkSMS, "password",
     registry.String("", "Password for the bulksms.com API"))
 conf.registerGlobalValue(BulkSMS, "phonebook_url",
     registry.String("", "URL to the phonebook service"))
-conf.registerGroup(BulkSMS, "mapping")
+conf.registerGlobalValue(BulkSMS, "mapping",
+    JsonValue({}, "A dictionary mapping preference to a list of channels"))
 
 # These settings are useful when testing the bot, or running unittests
 conf.registerGlobalValue(BulkSMS, "isTesting",

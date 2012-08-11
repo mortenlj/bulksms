@@ -28,29 +28,36 @@
 
 ###
 
+import supybot.conf as conf
 from supybot.test import *
+
+# Work around windows not having good enough precision in timer
+conf.supybot.protocols.irc.throttleTime.setValue(-1.0)
 
 def set_key(config, key, value):
     config["supybot.plugins.BulkSMS." + key] = value
 
-def build_config(conf={}):
+def build_config(custom_config=None):
     config = {}
     set_key(config, "isTesting", True)
     set_key(config, "isTesting.failing", False)
     set_key(config, "allowInAnyChannel", False)
-    set_key(config, "mapping.first", ["#first_a", "#first_b"])
-    set_key(config. "mapping.second", ["#second_a", "#second_b"])
-    for key in conf.keys():
-        set_key(config, key, conf[key])
+    set_key(config, "mapping", {
+        "first": ["#first_a", "#first_b"],
+        "second": ["#second_a", "#second_b"]
+        })
+    if custom_config:
+        for key in custom_config.keys():
+            set_key(config, key, custom_config[key])
     return config
 
 class BulkSMSTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)
     config = build_config()
 
+
 class BulkSMSAnyChannelTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)
     config = build_config({"allowInAnyChannel": True})
-
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
