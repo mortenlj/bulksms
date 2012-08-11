@@ -28,6 +28,8 @@
 
 ###
 
+from collections import defaultdict
+
 import supybot.conf as conf
 import supybot.registry as registry
 
@@ -37,13 +39,45 @@ def configure(advanced):
     # user or not.  You should effect your configuration by manipulating the
     # registry as appropriate.
     from supybot.questions import expect, anything, something, yn
-    conf.registerPlugin('BulkSMS', True)
-
+    BulkSMS = conf.registerPlugin('BulkSMS', True)
+    username = something("Username for the bulksms.com API?")
+    BulkSMS.username.setValue(username)
+    password = something("Password for the bulksms.com API?")
+    BulkSMS.password.setValue(password)
+    pb_url = something("URL to the phonebook service (see README for details)?")
+    BulkSMS.phonebook_url.setValue(pb_url)
+    if yn("""Do you want to restrict this plugin to only selected channels, mapped
+             to contact preferences (see README for details)?""", default=True):
+        mapping = defaultdict(list)
+        more = True
+        while more:
+            preference = something("Preference?")
+            channel = something("Channel?")
+            mapping[preference].append(channel)
+            more = yn("Add another channel?", default=True)
+        for pref in mapping.keys():
+            conf.registerGlobalValue(BulkSMS.mapping, pref, registry.SpaceSeparatedListOfStrings("", 
+                  """Channels allowed to send message to users with this preference"""))
+            getattr(BulkSMS.mapping, pref).setValue(mapping[pref])
+    else:
+        BulkSMS.allowInAnyChannel.setValue(True)
 
 BulkSMS = conf.registerPlugin('BulkSMS')
 # This is where your configuration variables (if any) should go.  For example:
-# conf.registerGlobalValue(BulkSMS, 'someConfigVariableName',
-#     registry.Boolean(False, """Help for someConfigVariableName."""))
+conf.registerGlobalValue(BulkSMS, "allowInAnyChannel",
+    registry.Boolean(False, "Allow sending SMS from any channel."))
+conf.registerGlobalValue(BulkSMS, "username",
+    registry.String("", "Username for the bulksms.com API"))
+conf.registerGlobalValue(BulkSMS, "password",
+    registry.String("", "Password for the bulksms.com API"))
+conf.registerGlobalValue(BulkSMS, "phonebook_url",
+    registry.String("", "URL to the phonebook service"))
+conf.registerGroup(BulkSMS, "mapping")
 
-
+# These settings are useful when testing the bot, or running unittests
+conf.registerGlobalValue(BulkSMS, "isTesting",
+    registry.Boolean(False, "Don't send any SMS, just use test method in API"))
+conf.registerGlobalValue(BulkSMS.isTesting, "failing",
+    registry.Boolean(False, "Should test requests fail or succeed"))
+    
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:
