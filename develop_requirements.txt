@@ -1,0 +1,1 @@
+supybot==0.83.4.1 # Not pip installable :(
