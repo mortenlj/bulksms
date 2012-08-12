@@ -45,7 +45,6 @@ def build_config(custom_config=None):
     set_key(config, "password", "password")
     set_key(config, "isTesting", True)
     set_key(config, "isTesting.failing", False)
-    set_key(config, "allowInAnyChannel", False)
     set_key(config, "mapping", {
         "#test": ["defence"],
         "emergency_channel": ["#emergency"]
@@ -71,9 +70,5 @@ class BulkSMSDefenceTestCase(ChannelPluginTestCase):
             self.assertError("sms Somebody This is a test")
         finally:
             root_config.isTesting.failing.setValue(False)
-
-class BulkSMSAnyChannelTestCase(ChannelPluginTestCase):
-    plugins = ('BulkSMS',)
-    config = build_config({"allowInAnyChannel": True})
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

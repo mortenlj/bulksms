@@ -60,23 +60,18 @@ def configure(advanced):
     BulkSMS.password.setValue(password)
     pb_url = something("URL to the phonebook service (see README for details)?")
     BulkSMS.phonebook_url.setValue(pb_url)
-    if yn("""Do you want to restrict this plugin to only selected channels, mapped
-             to contact preferences (see README for details)?""", default=True):
-        mapping = defaultdict(list)
-        more = True
-        while more:
-            preference = something("Preference?")
-            channel = something("Channel?")
-            mapping[channel].append(preference)
-            more = yn("Add another channel?", default=True)
-        BulkSMS.mapping.setValue(dict(mapping))
-    else:
-        BulkSMS.allowInAnyChannel.setValue(True)
+    mapping = defaultdict(list)
+    print "You need to map some preferences to channels"
+    more = True
+    while more:
+        preference = something("Preference?")
+        channel = something("Channel?")
+        mapping[channel].append(preference)
+        more = yn("Add another channel?", default=True)
+    BulkSMS.mapping.setValue(dict(mapping))
 
 BulkSMS = conf.registerPlugin('BulkSMS')
 # This is where your configuration variables (if any) should go.  For example:
-conf.registerGlobalValue(BulkSMS, "allowInAnyChannel",
-    registry.Boolean(False, "Allow sending SMS from any channel."))
 conf.registerGlobalValue(BulkSMS, "username",
     registry.String("", "Username for the bulksms.com API"))
 conf.registerGlobalValue(BulkSMS, "password",
