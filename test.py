@@ -34,6 +34,8 @@ from supybot.test import *
 # Work around windows not having good enough precision in timer
 conf.supybot.protocols.irc.throttleTime.setValue(-1.0)
 
+root_config = conf.supybot.plugins.BulkSMS
+
 def set_key(config, key, value):
     config["supybot.plugins.BulkSMS." + key] = value
 
@@ -59,7 +61,14 @@ class BulkSMSTestCase(ChannelPluginTestCase):
         self.assertError("sms Nobody This is a test")
 
     def testSuccessfulSend(self):
-        self.assertResponse("sms Somebody This is a test", "SMS sent successfully")
+        self.assertResponse("sms Somebody This is a test", "SMS sent successfully to Somebody")
+
+    def testFailedSend(self):
+        try:
+            root_config.isTesting.failing.setValue(True)
+            self.assertError("sms Somebody This is a test")
+        finally:
+            root_config.isTesting.failing.setValue(False)
 
 class BulkSMSAnyChannelTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)

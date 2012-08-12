@@ -29,8 +29,19 @@
 ###
 
 from supybot.commands import *
+import supybot.conf as conf
 import supybot.callbacks as callbacks
 
+from .local.phonebook import PhoneBook
+from .local.bulksms import API, TestAlways, StatusError
+
+def test_always():
+    root_config = conf.supybot.plugins.BulkSMS
+    if root_config.isTesting():
+        if root_config.isTesting.failing():
+            return TestAlways.FAIL
+        return TestAlways.SUCCEED
+    return TestAlways.NO
 
 class BulkSMS(callbacks.Plugin):
     """To send a SMS, use the sms command, supplying the nick of the user as first
@@ -38,12 +49,28 @@ class BulkSMS(callbacks.Plugin):
     that user. Your nick will be appended to the end of the message."""
     threaded = True
 
+    def __init__(self, irc):
+        self.__parent = super(BulkSMS, self)
+        super(BulkSMS, self).__init__(irc)
+        self.phone_book = PhoneBook()
+        root_config = conf.supybot.plugins.BulkSMS
+        self.api = API(root_config.username(), root_config.password())
+
     def sms(self, irc, msg, args, chan, nick, message):
         """<nick> <message>
 
         Send an SMS to <nick> with the <message>, with your nick appended to the end
         """
-        pass
+        number = self.phone_book.get_number(nick)
+        if not number:
+            irc.error("%s hasn't registered a phone number in the phonebook" % nick)
+            return
+        sms = "%s -- %s" % (message, msg.nick)
+        try:
+            self.api.send_sms(sms, number, test_always())
+        except StatusError as e:
+            irc.error("Unable to send SMS: %s" % str(e))
+        irc.reply("SMS sent successfully to %s" % nick)
     sms = wrap(sms, ["public", "channel", "nick", "text"])
 
 Class = BulkSMS
