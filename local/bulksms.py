@@ -53,13 +53,16 @@ class API(object):
             "message": message,
             "msisdn": msisdn,
             "sender": "HowlingRain",
+            "routing_group": 2,
             "source_id": source_id,
             "repliable": 0,
         }
         post_data.update(TestAlways.to_param(test_always))
-        r = requests.post("http://bulksms.vsms.net:5567/eapi/submission/send_sms/2/2.0", data=post_data)
-        if r.status_code != requests.codes.ok:
-            raise ConnectionError("Server error (%d)" % r.status_code)
+        try:
+            r = requests.post("http://bulksms.vsms.net:5567/eapi/submission/send_sms/2/2.0", data=post_data)
+            r.raise_for_status()
+        except (requests.exceptions.RequestException, IOError) as e:
+            raise ConnectionError(str(e))
         response = r.text
         if not response.startswith("0"):
             status_code, description = parse_status_response(response)
