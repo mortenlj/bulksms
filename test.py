@@ -45,15 +45,15 @@ def build_config(custom_config=None):
     set_key(config, "isTesting.failing", False)
     set_key(config, "allowInAnyChannel", False)
     set_key(config, "mapping", {
-        "first": ["#first_a", "#first_b"],
-        "second": ["#second_a", "#second_b"]
+        "#test": ["defence"],
+        "emergency_channel": ["#emergency"]
         })
     if custom_config:
         for key in custom_config.keys():
             set_key(config, key, custom_config[key])
     return config
 
-class BulkSMSTestCase(ChannelPluginTestCase):
+class BulkSMSDefenceTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)
     config = build_config()
 

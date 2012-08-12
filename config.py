@@ -52,7 +52,7 @@ def configure(advanced):
     # a bool that specifies whether the user identified himself as an advanced
     # user or not.  You should effect your configuration by manipulating the
     # registry as appropriate.
-    from supybot.questions import expect, anything, something, yn
+    from supybot.questions import   something, yn
     BulkSMS = conf.registerPlugin('BulkSMS', True)
     username = something("Username for the bulksms.com API?")
     BulkSMS.username.setValue(username)
@@ -67,7 +67,7 @@ def configure(advanced):
         while more:
             preference = something("Preference?")
             channel = something("Channel?")
-            mapping[preference].append(channel)
+            mapping[channel].append(preference)
             more = yn("Add another channel?", default=True)
         BulkSMS.mapping.setValue(dict(mapping))
     else:
@@ -84,7 +84,7 @@ conf.registerGlobalValue(BulkSMS, "password",
 conf.registerGlobalValue(BulkSMS, "phonebook_url",
     registry.String("", "URL to the phonebook service"))
 conf.registerGlobalValue(BulkSMS, "mapping",
-    JsonValue({}, "A dictionary mapping preference to a list of channels"))
+    JsonValue({}, "A dictionary mapping channel to a list of preferences"))
 
 # These settings are useful when testing the bot, or running unittests
 conf.registerGlobalValue(BulkSMS, "isTesting",
