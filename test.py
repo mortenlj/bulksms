@@ -55,6 +55,11 @@ class BulkSMSTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)
     config = build_config()
 
+    def testNonExistingNick(self):
+        self.assertError("sms Nobody This is a test")
+
+    def testSuccessfulSend(self):
+        self.assertResponse("sms Somebody This is a test", "SMS sent successfully")
 
 class BulkSMSAnyChannelTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)

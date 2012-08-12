@@ -28,18 +28,23 @@
 
 ###
 
-import supybot.utils as utils
 from supybot.commands import *
-import supybot.plugins as plugins
-import supybot.ircutils as ircutils
 import supybot.callbacks as callbacks
 
 
 class BulkSMS(callbacks.Plugin):
-    """Add the help for "@plugin help BulkSMS" here
-    This should describe *how* to use this plugin."""
+    """To send a SMS, use the sms command, supplying the nick of the user as first
+    parameter. The rest of the line will be sent to the registered phonenumber of
+    that user. Your nick will be appended to the end of the message."""
     threaded = True
 
+    def sms(self, irc, msg, args, chan, nick, message):
+        """<nick> <message>
+
+        Send an SMS to <nick> with the <message>, with your nick appended to the end
+        """
+        pass
+    sms = wrap(sms, ["public", "channel", "nick", "text"])
 
 Class = BulkSMS
 
