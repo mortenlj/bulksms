@@ -57,15 +57,25 @@ class BulkSMS(callbacks.Plugin):
     def __init__(self, irc):
         self.__parent = super(BulkSMS, self)
         super(BulkSMS, self).__init__(irc)
-        self.phone_book = PhoneBook()
+        self.phone_book = None
+        self.api = None
+
+    def _lazy_init_api(self):
         root_config = conf.supybot.plugins.BulkSMS
         self.api = API(root_config.username(), root_config.password())
+
+    def _lazy_init_phone_book(self):
+        self.phone_book = PhoneBook()
 
     def sms(self, irc, msg, args, chan, nick, message):
         """<nick> <message>
 
         Send an SMS to <nick> with the <message>, with your nick appended to the end
         """
+        if not self.phone_book:
+            self._lazy_init_phone_book()
+        if not self.api:
+            self._lazy_init_api()
         contact = self.phone_book.get(nick)
         if not contact:
             irc.error("Unable to find %s in phone book" % nick)

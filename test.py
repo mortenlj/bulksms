@@ -41,6 +41,8 @@ def set_key(config, key, value):
 
 def build_config(custom_config=None):
     config = {}
+    set_key(config, "username", "username")
+    set_key(config, "password", "password")
     set_key(config, "isTesting", True)
     set_key(config, "isTesting.failing", False)
     set_key(config, "allowInAnyChannel", False)
