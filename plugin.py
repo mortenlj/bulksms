@@ -33,7 +33,7 @@ import supybot.conf as conf
 import supybot.callbacks as callbacks
 
 from .local.phonebook import PhoneBook
-from .local.bulksms import API, TestAlways, StatusError
+from .local.bulksms import API, TestAlways, APIError
 
 def test_always():
     root_config = conf.supybot.plugins.BulkSMS
@@ -79,8 +79,8 @@ class BulkSMS(callbacks.Plugin):
             return
         sms = "%s -- %s" % (message, msg.nick)
         try:
-            self.api.send_sms(sms, contact.number, test_always())
-        except StatusError as e:
+            self.api.send_sms(sms, contact.number, msg.nick, test_always())
+        except APIError as e:
             irc.error("Unable to send SMS: %s" % str(e))
         else:
             irc.reply("SMS sent successfully to %s" % nick)
