@@ -55,11 +55,13 @@ def configure(advanced):
     from supybot.questions import   something, yn
     BulkSMS = conf.registerPlugin('BulkSMS', True)
     username = something("Username for the bulksms.com API?")
-    BulkSMS.username.setValue(username)
+    BulkSMS.api.username.setValue(username)
     password = something("Password for the bulksms.com API?")
-    BulkSMS.password.setValue(password)
-    pb_url = something("URL to the phonebook service (see README for details)?")
-    BulkSMS.phonebook_url.setValue(pb_url)
+    BulkSMS.api.password.setValue(password)
+    username = something("Username for the phonebook?")
+    BulkSMS.phonebook.username.setValue(username)
+    password = something("Password for the phonebook?")
+    BulkSMS.phonebook.password.setValue(password)
     mapping = defaultdict(list)
     print "You need to map some preferences to channels"
     more = True
@@ -72,12 +74,16 @@ def configure(advanced):
 
 BulkSMS = conf.registerPlugin('BulkSMS')
 # This is where your configuration variables (if any) should go.  For example:
-conf.registerGlobalValue(BulkSMS, "username",
+conf.registerGroup(BulkSMS, "api")
+conf.registerGlobalValue(BulkSMS.api, "username",
     registry.String("", "Username for the bulksms.com API"))
-conf.registerGlobalValue(BulkSMS, "password",
+conf.registerGlobalValue(BulkSMS.api, "password",
     registry.String("", "Password for the bulksms.com API"))
-conf.registerGlobalValue(BulkSMS, "phonebook_url",
-    registry.String("", "URL to the phonebook service"))
+conf.registerGroup(BulkSMS, "phonebook")
+conf.registerGlobalValue(BulkSMS.phonebook, "username",
+    registry.String("", "Username for the phonebook"))
+conf.registerGlobalValue(BulkSMS.phonebook, "password",
+    registry.String("", "Password for the phonebook"))
 conf.registerGlobalValue(BulkSMS, "mapping",
     JsonValue({}, "A dictionary mapping channel to a list of preferences"))
 

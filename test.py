@@ -41,13 +41,15 @@ def set_key(config, key, value):
 
 def build_config(custom_config=None):
     config = {}
-    set_key(config, "username", "username")
-    set_key(config, "password", "password")
+    set_key(config, "api.username", "username")
+    set_key(config, "api.password", "password")
+    set_key(config, "phonebook.username", "username") # Must be set to real username for test to work
+    set_key(config, "phonebook.password", "password") # Must be set to real password for test to work
     set_key(config, "isTesting", True)
     set_key(config, "isTesting.failing", False)
     set_key(config, "mapping", {
         "#test": ["defence"],
-        "emergency_channel": ["#emergency"]
+        "#emergency_channel": ["emergency"]
         })
     if custom_config:
         for key in custom_config.keys():
@@ -57,17 +59,18 @@ def build_config(custom_config=None):
 class BulkSMSDefenceTestCase(ChannelPluginTestCase):
     plugins = ('BulkSMS',)
     config = build_config()
+    channel = "#emergency_channel"
 
     def testNonExistingNick(self):
         self.assertError("sms Nobody This is a test")
 
     def testSuccessfulSend(self):
-        self.assertResponse("sms Somebody This is a test", "SMS sent successfully to Somebody")
+        self.assertResponse("sms Epcylon This is a test", "SMS sent successfully to Epcylon")
 
     def testFailedSend(self):
         try:
             root_config.isTesting.failing.setValue(True)
-            self.assertError("sms Somebody This is a test")
+            self.assertError("sms Epcylon This is a test")
         finally:
             root_config.isTesting.failing.setValue(False)
 

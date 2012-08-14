@@ -32,7 +32,7 @@ from supybot.commands import wrap
 import supybot.conf as conf
 import supybot.callbacks as callbacks
 
-from .local.phonebook import PhoneBook
+from .local.phonebook import PhoneBook, PhoneBookError
 from .local.bulksms import API, TestAlways, APIError
 
 def test_always():
@@ -60,33 +60,56 @@ class BulkSMS(callbacks.Plugin):
         self.phone_book = None
         self.api = None
 
-    def _lazy_init_api(self):
-        root_config = conf.supybot.plugins.BulkSMS
-        self.api = API(root_config.username(), root_config.password())
-
-    def _lazy_init_phone_book(self):
-        self.phone_book = PhoneBook()
-
     def sms(self, irc, msg, args, chan, nick, message):
         """<nick> <message>
 
         Send an SMS to <nick> with the <message>, with your nick appended to the end
         """
+        self._lazy_init()
+        contact, error_msg = self._get_contact(irc, nick)
+        if error_msg:
+            irc.error(error_msg)
+            return
+        error_msg = self._check_preference(chan, contact, nick)
+        if error_msg:
+            irc.error(error_msg)
+            return
+        self._send_message(contact, irc, message, msg, nick)
+    sms = wrap(sms, ["public", "channel", "nick", "text"])
+
+    def _lazy_init(self):
         if not self.phone_book:
             self._lazy_init_phone_book()
         if not self.api:
             self._lazy_init_api()
-        contact = self.phone_book.get(nick)
+
+    def _lazy_init_api(self):
+        root_config = conf.supybot.plugins.BulkSMS
+        self.api = API(root_config.api.username(), root_config.api.password())
+
+    def _lazy_init_phone_book(self):
+        root_config = conf.supybot.plugins.BulkSMS
+        self.phone_book = PhoneBook(root_config.phonebook.username(), root_config.phonebook.password())
+
+    def _get_contact(self, irc, nick):
+        error_msg = None
+        contact = None
+        try:
+            contact = self.phone_book.get(nick)
+        except PhoneBookError as e:
+            error_msg = "Error while looking up nick: %s" % str(e)
         if not contact:
-            irc.error("Unable to find %s in phone book" % nick)
-            return
-        if not contact.number:
-            irc.error("%s hasn't registered a phone number in the phone book" % nick)
-            return
+            error_msg = "Unable to find %s in phone book" % nick
+        elif not contact.number:
+            error_msg = "%s hasn't registered a phone number in the phone book" % nick
+        return contact, error_msg
+
+    def _check_preference(self, chan, contact, nick):
         preferences = channel_to_preferences(chan)
         if not any((contact.has_preference(preference) for preference in preferences)):
-            irc.error("%s does not wish to receive SMS from %s" % (nick, chan))
-            return
+            return "%s does not wish to receive SMS from %s" % (nick, chan)
+
+    def _send_message(self, contact, irc, message, msg, nick):
         sms = "%s -- %s" % (message, msg.nick)
         try:
             self.api.send_sms(sms, contact.number, msg.nick, test_always())
@@ -94,7 +117,6 @@ class BulkSMS(callbacks.Plugin):
             irc.error("Unable to send SMS: %s" % str(e))
         else:
             irc.reply("SMS sent successfully to %s" % nick)
-    sms = wrap(sms, ["public", "channel", "nick", "text"])
 
 Class = BulkSMS
 
