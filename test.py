@@ -47,10 +47,6 @@ def build_config(custom_config=None):
     set_key(config, "phonebook.password", "password") # Must be set to real password for test to work
     set_key(config, "isTesting", True)
     set_key(config, "isTesting.failing", False)
-    set_key(config, "mapping", {
-        "#test": ["defence"],
-        "#emergency_channel": ["emergency"]
-        })
     if custom_config:
         for key in custom_config.keys():
             set_key(config, key, custom_config[key])
@@ -61,17 +57,39 @@ class BulkSMSDefenceTestCase(ChannelPluginTestCase):
     config = build_config()
     channel = "#emergency_channel"
 
+    def setUp(self):
+        super(BulkSMSDefenceTestCase, self).setUp()
+        self.plugin = self.irc.getCallback("BulkSMS")
+        from db import Database
+        self.plugin.database = Database("sqlite://")
+
     def testNonExistingNick(self):
-        self.assertError("sms Nobody This is a test")
+        self.assertErrorMessage("sms Nobody This is a test", "Unable to find Nobody in phone book")
 
     def testSuccessfulSend(self):
+        self.getMsg("map #emergency_channel emergency")
         self.assertResponse("sms Epcylon This is a test", "SMS sent successfully to Epcylon")
 
     def testFailedSend(self):
+        self.getMsg("map #emergency_channel emergency")
         try:
             root_config.isTesting.failing.setValue(True)
-            self.assertError("sms Epcylon This is a test")
+            self.assertErrorMessage("sms Epcylon This is a test", "Unable to send SMS: 22")
         finally:
             root_config.isTesting.failing.setValue(False)
+
+    def testNotAllowedSend(self):
+        self.assertErrorMessage("sms Epcylon This is a test", "Epcylon does not wish to receive SMS")
+
+    def testMapUnMap(self):
+        self.getMsg("map #emergency_channel emergency")
+        self.assertResponse("sms Epcylon This is a test", "SMS sent successfully to Epcylon")
+        self.getMsg("unmap #emergency_channel emergency")
+        self.assertErrorMessage("sms Epcylon This is a test", "Epcylon does not wish to receive SMS")
+
+    def assertErrorMessage(self, query, error_message):
+        m = self.getMsg(query)
+        self.failUnless(m.args[1].startswith('Error: ' + error_message),
+                        '%r did not give correct error message: %s' % (query, m.args[1]))
 
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

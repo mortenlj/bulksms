@@ -27,11 +27,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 ###
+import os
+from threading import Lock
 
 from supybot.commands import wrap
 import supybot.conf as conf
 import supybot.callbacks as callbacks
 
+from db import Database
 from phonebook import PhoneBook, PhoneBookError
 from bulksms import API, TestAlways, APIError
 
@@ -44,10 +47,6 @@ def test_always():
     return TestAlways.NO
 
 
-def channel_to_preferences(chan):
-    mapping = conf.supybot.plugins.BulkSMS.mapping()
-    return mapping.get(chan, [])
-
 class BulkSMS(callbacks.Plugin):
     """To send a SMS, use the sms command, supplying the nick of the user as first
     parameter. The rest of the line will be sent to the registered phone number of
@@ -55,10 +54,17 @@ class BulkSMS(callbacks.Plugin):
     threaded = True
 
     def __init__(self, irc):
-        self.__parent = super(BulkSMS, self)
         super(BulkSMS, self).__init__(irc)
+        self.database = None
         self.phone_book = None
         self.api = None
+        self.init_lock = Lock()
+
+    def die(self):
+        if self.database:
+            self.database.close()
+        if hasattr(self, "__parent"):
+            self.__parent.die()
 
     def sms(self, irc, msg, args, chan, nick, message):
         """<nick> <message>
@@ -80,18 +86,27 @@ class BulkSMS(callbacks.Plugin):
     sms = wrap(sms, ["public", "channel", "nick", "text"])
 
     def _lazy_init(self):
-        if not self.phone_book:
-            self._lazy_init_phone_book()
-        if not self.api:
-            self._lazy_init_api()
+        with self.init_lock:
+            if not self.database:
+                self._lazy_init_database()
+            if not self.phone_book:
+                self._lazy_init_phone_book()
+            if not self.api:
+                self._lazy_init_api()
 
-    def _lazy_init_api(self):
-        root_config = conf.supybot.plugins.BulkSMS
-        self.api = API(root_config.api.username(), root_config.api.password())
+    def _lazy_init_database(self):
+        db_dir = conf.supybot.directories.data.dirize('BulkSMS')
+        db_path = os.path.abspath(os.path.join(db_dir, "prefdb.sqlite"))
+        db_url = "sqlite:///" + db_path
+        self.database = Database(db_url)
 
     def _lazy_init_phone_book(self):
         root_config = conf.supybot.plugins.BulkSMS
         self.phone_book = PhoneBook(root_config.phonebook.username(), root_config.phonebook.password())
+
+    def _lazy_init_api(self):
+        root_config = conf.supybot.plugins.BulkSMS
+        self.api = API(root_config.api.username(), root_config.api.password())
 
     def _get_contact(self, irc, nick):
         error_msg = None
@@ -107,8 +122,8 @@ class BulkSMS(callbacks.Plugin):
         return contact, error_msg
 
     def _check_preference(self, chan, contact, nick):
-        preferences = channel_to_preferences(chan)
-        if not any((contact.has_preference(preference) for preference in preferences)):
+        mappings = self.database.get_mappings(chan)
+        if not any((contact.has_preference(mapping.preference) for mapping in mappings)):
             return "%s does not wish to receive SMS from %s" % (nick, chan)
 
     def _send_message(self, contact, irc, message, msg, nick):
@@ -121,6 +136,28 @@ class BulkSMS(callbacks.Plugin):
             irc.error("Unable to send SMS: %s" % str(e))
         else:
             irc.reply("SMS sent successfully to %s" % nick)
+
+    def map(self, irc, msg, args, chan, preference):
+        """<channel> <preference>
+
+        Map preference to channel
+        """
+        self._lazy_init()
+        if not self.database.has_mapping(chan, preference):
+            self.database.add_mapping(chan, preference)
+        irc.reply("OK")
+    map = wrap(map, ["admin", "channel", "somethingWithoutSpaces"])
+
+    def unmap(self, irc, msg, args, chan, preference):
+        """<channel> <preference>
+
+        Remove mapping of preference to channel
+        """
+        self._lazy_init()
+        if self.database.has_mapping(chan, preference):
+            self.database.remove_mapping(chan, preference)
+        irc.reply("OK")
+    unmap = wrap(unmap, ["admin", "channel", "somethingWithoutSpaces"])
 
 Class = BulkSMS
 

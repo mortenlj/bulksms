@@ -28,31 +28,16 @@
 
 ###
 
-from collections import defaultdict
-from json import dumps, loads
-
 import supybot.conf as conf
 import supybot.registry as registry
-
-class JsonValue(registry.Value):
-    """Any value that can be serialized to JSON. Probably hard to work with manually.
-    """
-
-    def serialize(self):
-        json_value = dumps(self())
-        return json_value.replace('\\', '\\\\')
-
-    def set(self, json_value):
-        s = loads(json_value)
-        self.setValue(s)
-
 
 def configure(advanced):
     # This will be called by supybot to configure this module.  advanced is
     # a bool that specifies whether the user identified himself as an advanced
     # user or not.  You should effect your configuration by manipulating the
     # registry as appropriate.
-    from supybot.questions import   something, yn
+    from supybot.questions import   something
+
     BulkSMS = conf.registerPlugin('BulkSMS', True)
     username = something("Username for the bulksms.com API?")
     BulkSMS.api.username.setValue(username)
@@ -62,15 +47,6 @@ def configure(advanced):
     BulkSMS.phonebook.username.setValue(username)
     password = something("Password for the phonebook?")
     BulkSMS.phonebook.password.setValue(password)
-    mapping = defaultdict(list)
-    print "You need to map some preferences to channels"
-    more = True
-    while more:
-        preference = something("Preference?")
-        channel = something("Channel?")
-        mapping[channel].append(preference)
-        more = yn("Add another channel?", default=True)
-    BulkSMS.mapping.setValue(dict(mapping))
 
 BulkSMS = conf.registerPlugin('BulkSMS')
 # This is where your configuration variables (if any) should go.  For example:
@@ -84,8 +60,6 @@ conf.registerGlobalValue(BulkSMS.phonebook, "username",
     registry.String("", "Username for the phonebook"))
 conf.registerGlobalValue(BulkSMS.phonebook, "password",
     registry.String("", "Password for the phonebook"))
-conf.registerGlobalValue(BulkSMS, "mapping",
-    JsonValue({}, "A dictionary mapping channel to a list of preferences"))
 
 # These settings are useful when testing the bot, or running unittests
 conf.registerGlobalValue(BulkSMS, "isTesting",
