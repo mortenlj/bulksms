@@ -59,10 +59,12 @@ class Database(object):
     def has_mapping(self, channel, preference):
         return self.get_mapping(channel, preference) is not None
 
-    def get_mappings(self, channel):
+    def get_mappings(self, channel=None):
         session = self.Session()
-        return session.query(Mapping)\
-            .filter(Mapping.channel == channel)
+        query = session.query(Mapping)
+        if channel:
+            return query.filter(Mapping.channel == channel)
+        return query
 
 if __name__ == "__main__":
     pass

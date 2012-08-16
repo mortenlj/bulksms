@@ -27,12 +27,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 ###
+from collections import defaultdict
 import os
 from threading import Lock
 
 from supybot.commands import wrap
 import supybot.conf as conf
 import supybot.callbacks as callbacks
+import supybot.utils.str as str_utils
 
 from db import Database
 from phonebook import PhoneBook, PhoneBookError
@@ -162,6 +164,24 @@ class BulkSMS(callbacks.Plugin):
             self.database.remove_mapping(chan, preference)
         irc.reply("OK")
     unmap = wrap(unmap, ["admin", "channel", "somethingWithoutSpaces"])
+
+    def mappings(self, irc, msg, args):
+        """<no arguments>
+
+        List all current mappings
+        """
+        self._lazy_init()
+        mappings = self.database.get_mappings()
+        chan2pref = defaultdict(list)
+        has_replied = False
+        for mapping in mappings:
+            chan2pref[mapping.channel].append(mapping.preference)
+        for channel, preferences in chan2pref.iteritems():
+            irc.reply(str_utils.format("%s: %L", channel, sorted(preferences)))
+            has_replied = True
+        if not has_replied:
+            irc.reply("There are no registered mappings")
+    mappings = wrap(mappings, ["admin"])
 
 Class = BulkSMS
 

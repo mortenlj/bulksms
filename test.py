@@ -87,6 +87,20 @@ class BulkSMSDefenceTestCase(ChannelPluginTestCase):
         self.getMsg("unmap #emergency_channel emergency")
         self.assertErrorMessage("sms Epcylon This is a test", "Epcylon does not wish to receive SMS")
 
+    def testMappings(self):
+        self.getMsg("map emergency")
+        self.getMsg("map #defence defence")
+        self.getMsg("map #emergency_channel defence")
+        responses = []
+        response = self.getMsg("mappings")
+        while response is not None:
+            responses.append(response.args[1])
+            time.sleep(0.1) # So it doesn't suck up 100% cpu.
+            response = self.irc.takeMsg()
+        responses.sort()
+        self.assertEqual(responses[0], "#emergency_channel: defence and emergency")
+        self.assertEqual(responses[1], "test: #defence: defence")
+
     def assertErrorMessage(self, query, error_message):
         m = self.getMsg(query)
         self.failUnless(m.args[1].startswith('Error: ' + error_message),
