@@ -95,9 +95,13 @@ class BulkSMS(callbacks.Plugin):
                 self._lazy_init_api()
 
     def _lazy_init_database(self):
-        db_dir = conf.supybot.directories.data.dirize('BulkSMS')
-        db_path = os.path.abspath(os.path.join(db_dir, "prefdb.sqlite"))
+        data_dir = conf.supybot.directories.data()
+        plugin_data_dir = os.path.join(data_dir, "BulkSMS")
+        if not os.path.exists(plugin_data_dir):
+            os.makedirs(plugin_data_dir)
+        db_path = os.path.abspath(os.path.join(plugin_data_dir, "db.sqlite"))
         db_url = "sqlite:///" + db_path
+        self.log.debug("Opening database-URL: %r" % db_url)
         self.database = Database(db_url)
 
     def _lazy_init_phone_book(self):
