@@ -40,7 +40,7 @@ class PhoneBook(object):
 
     Uses a backend webservice to get the information.
     """
-    phonebook_url = "https://arby.howlingrain.co.uk/sms.php"
+    phonebook_url = "https://arby.howlingrain.co.uk/api.php"
     login_url = "https://forum.howlingrain.co.uk/ucp.php"
 
     def __init__(self, username, password):
@@ -51,8 +51,8 @@ class PhoneBook(object):
 
     def get(self, query, should_retry=True):
         params = {
-            "output": "json",
-            "q": query
+            "cmd": "contact",
+            "q[]": query
         }
         r = self.session.get(self.phonebook_url, params=params, allow_redirects=False)
         if r.status_code != requests.codes.ok:
@@ -62,18 +62,23 @@ class PhoneBook(object):
             else:
                 raise PhoneBookError("Unable to get data from phone book (%d)" % r.status_code)
         json_data = r.json
-        if json_data and u"contact" in json_data:
-            contact_data = json_data[u"contact"]
-            if u"name" in contact_data:
-                name = PhoneBook.extract(contact_data, u"name")
-                number = PhoneBook.extract(contact_data, u"number")
-                pref = PhoneBook.extract(contact_data, u"pref")
+        if json_data and u"results" in json_data:
+            print json_data
+            contact_data = json_data[u"results"]
+            print contact_data
+            if query in contact_data and contact_data[query]:
+                name = PhoneBook.extract(contact_data[query], u"name")
+                number = PhoneBook.extract(contact_data[query], u"number")
+                pref = PhoneBook.extract(contact_data[query], u"pref")
                 return Contact(name, number, pref)
         return None
 
     def login(self):
+        print "Starting login sequence"
         sid = self.load_login_page()
+        print "Login page loaded, sid=%r" % sid
         self.perform_login(sid)
+        print "Logged in?"
 
     def perform_login(self, sid):
         params = {"mode": "login"}
