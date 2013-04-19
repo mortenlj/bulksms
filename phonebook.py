@@ -74,11 +74,8 @@ class PhoneBook(object):
         return None
 
     def login(self):
-        print "Starting login sequence"
         sid = self.load_login_page()
-        print "Login page loaded, sid=%r" % sid
         self.perform_login(sid)
-        print "Logged in?"
 
     def perform_login(self, sid):
         params = {"mode": "login"}
@@ -94,6 +91,10 @@ class PhoneBook(object):
             r.raise_for_status()
         except (requests.exceptions.RequestException, IOError) as e:
             raise PhoneBookError("Unable to log in: %s" % str(e))
+        html = BeautifulSoup(r.text)
+        error = html.find(u"span", attrs={u"class": u"error"})
+        if error:
+            raise PhoneBookError("Error logging in: %s" % error.string)
 
     def load_login_page(self):
         params = {"mode":"login"}
