@@ -62,14 +62,15 @@ class PhoneBook(object):
             else:
                 raise PhoneBookError("Unable to get data from phone book (%d)" % r.status_code)
         json_data = r.json
-        if json_data and u"results" in json_data:
-            print json_data
-            contact_data = json_data[u"results"]
-            print contact_data
-            if query in contact_data and contact_data[query]:
-                name = PhoneBook.extract(contact_data[query], u"name")
-                number = PhoneBook.extract(contact_data[query], u"number")
-                pref = PhoneBook.extract(contact_data[query], u"pref")
+        if json_data:
+            try:
+                contact_data = json_data[u"results"][0][query]
+            except (IndexError, KeyError):
+                return None
+            if contact_data:
+                name = PhoneBook.extract(contact_data, u"name")
+                number = PhoneBook.extract(contact_data, u"number")
+                pref = PhoneBook.extract(contact_data, u"pref")
                 return Contact(name, number, pref)
         return None
 
