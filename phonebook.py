@@ -23,7 +23,11 @@ class Contact(object):
         self.preferences = preferences
 
     def has_preference(self, preference):
-        return self.preferences[preference]
+        try:
+            return self.preferences.get(preference, False)
+        except AttributeError:
+            pass
+        return False
 
     def __str__(self):
         return "%s (%s) - %r" % (self.nick, self.number, self.preferences)
