@@ -48,7 +48,7 @@ __author__ = supybot.Author("Morten Lied Johansen", "Epcylon", "mortenjo+varg@if
 __contributors__ = {}
 
 # This is a url where the most recent plugin package can be downloaded.
-__url__ = 'https://bitbucket.org/mortenlj/bulksms' # 'http://supybot.com/Members/yourname/BulkSMS/download'
+__url__ = 'https://github.com/mortenlj/bulksms' # 'http://supybot.com/Members/yourname/BulkSMS/download'
 
 import config
 import plugin
